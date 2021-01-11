@@ -8,7 +8,13 @@ pygame.display.set_caption('Space Intruders')
 
 FPS = 60
 VEL = 5
+BULLET_VEL = 7
+MAX_BULLETS = 4
 SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 55, 45
+
+RED = (255, 0, 0)
+
+HIT = pygame.USEREVENT + 1
 
 SPACE = pygame.transform.scale(pygame.image.load(
     os.path.join('assets', 'space.png')), (WIDTH, HEIGHT))
@@ -22,11 +28,14 @@ ENEMY = pygame.transform.scale(
     ENEMY_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT))
 
 
-def draw_window(player, enemies):
+def draw_window(player, enemies, bullets):
     WIN.blit(SPACE, (0, 0))
     WIN.blit(PLAYER, (player.x, player.y))
     for enemy in enemies:
         WIN.blit(ENEMY, (enemy.x, enemy.y))
+
+    for bullet in bullets:
+        pygame.draw.rect(WIN, RED, bullet)
     pygame.display.update()
 
 
@@ -44,6 +53,17 @@ def handle_enemy_movement(enemies, direction):
             enemy.x += VEL//3
         if direction == 'left':
             enemy.x -= VEL//3
+
+
+def handle_bullets(bullets, enemies):
+    for bullet in bullets:
+        bullet.y -= BULLET_VEL
+        for enemy in enemies:
+            if enemy.colliderect(bullet):
+                enemies.remove(enemy)
+                bullets.remove(bullet)
+        if bullet.y < 0:
+            bullets.remove(bullet)
 
 
 def create_enemies(enemies):
@@ -67,6 +87,8 @@ def main():
                          SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
     enemies = []
     create_enemies(enemies)
+    bullets = []
+
     direction = 'right'
 
     clock = pygame.time.Clock()
@@ -77,6 +99,12 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and len(bullets) < MAX_BULLETS:
+                    bullet = pygame.Rect(
+                        player.x + player.width//2, player.y, 5, 10)
+                    bullets.append(bullet)
 
         keys_pressed = pygame.key.get_pressed()
         handle_player_movement(keys_pressed, player)
@@ -93,7 +121,9 @@ def main():
 
         handle_enemy_movement(enemies, direction)
 
-        draw_window(player, enemies)
+        handle_bullets(bullets, enemies)
+
+        draw_window(player, enemies, bullets)
 
 
 if __name__ == '__main__':
